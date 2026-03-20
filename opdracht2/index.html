@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Client</title>
+</head>
+<body>
+  <input type="text" id="messageInput" placeholder="Typ je bericht">
+  <button id="sendButton">Send</button>
+  <ul id="messages"></ul>
+ 
+  <script>
+    const socket = new WebSocket('ws://localhost:8080');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const messages = document.getElementById('messages');
+ 
+    const pingSound = new Audio('ping.mp3');
+ 
+    socket.addEventListener('open', () => {
+      console.log('Connected to server');
+    });
+ 
+    socket.addEventListener('message', event => {
+      const message = document.createElement('li');
+      message.textContent = event.data;
+ 
+      pingSound.currentTime = 0;
+      pingSound.play();
+ 
+      messages.appendChild(message);
+    });
+ 
+    sendButton.addEventListener('click', () => {
+      const msg = messageInput.value;
+      if (!msg) return;
+ 
+      const ownMessage = document.createElement('li');
+      ownMessage.textContent = `Jij: ${msg}`;
+      messages.appendChild(ownMessage);
+ 
+      socket.send(msg);
+ 
+      messageInput.value = '';
+    });
+  </script>
+</body>
+</html>

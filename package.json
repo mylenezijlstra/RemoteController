@@ -1,0 +1,23 @@
+{
+  "name": "remotecontroller",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/mylenezijlstra/RemoteController#readme",
+  "bugs": {
+    "url": "https://github.com/mylenezijlstra/RemoteController/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mylenezijlstra/RemoteController.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "test": "npm run dev"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}
