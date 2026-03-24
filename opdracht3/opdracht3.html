@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Usability Heuristics Voorbeelden</title>
+ 
+<style>
+body {
+    font-family: Arial;
+    padding: 20px;
+}
+ 
+section {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+ 
+button {
+    padding: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+ 
+.primary {
+    background-color: blue;
+    color: white;
+}
+ 
+.danger {
+    background-color: red;
+    color: white;
+}
+ 
+.hidden {
+    display: none;
+}
+</style>
+</head>
+ 
+<body>
+ 
+<h1>Usability Voorbeelden</h1>
+ 
+<!-- 1. Visibility of system status -->
+<section>
+<h2>1. Loading bar (Visibility of system status)</h2>
+<button onclick="startLoading()">Start upload</button>
+<br><br>
+<progress id="progressBar" value="0" max="100"></progress>
+<p id="loadingText"></p>
+</section>
+ 
+<!-- 2. User control and freedom -->
+<section>
+<h2>2. Undo knop</h2>
+<p id="item">Item aanwezig</p>
+<button onclick="deleteItem()" class="danger">Verwijder</button>
+<button onclick="undoDelete()" class="primary hidden" id="undoBtn">Ongedaan maken</button>
+</section>
+ 
+<!-- 3. Consistency -->
+<section>
+<h2>3. Consistente knoppen</h2>
+<button class="primary">Opslaan</button>
+<button class="danger">Verwijderen</button>
+</section>
+ 
+<!-- 4. Error prevention -->
+<section>
+<h2>4. Form validatie</h2>
+<form onsubmit="return validateForm()">
+    <input type="text" id="email" placeholder="Voer email in">
+    <br>
+    <small id="error" style="color:red;"></small>
+    <br>
+    <button type="submit">Versturen</button>
+</form>
+</section>
+ 
+<!-- 5. Minimalist design -->
+<section>
+<h2>5. Minimalistisch design</h2>
+<h3>Welkom bij onze app</h3>
+<p>De beste tool voor studenten</p>
+<button class="primary">Begin</button>
+</section>
+ 
+<script>
+ 
+// 1. Loading bar
+function startLoading() {
+    let progress = document.getElementById("progressBar");
+    let text = document.getElementById("loadingText");
+    let value = 0;
+ 
+    let interval = setInterval(() => {
+        value += 10;
+        progress.value = value;
+        text.innerText = "Uploaden: " + value + "%";
+ 
+        if (value >= 100) {
+            clearInterval(interval);
+            text.innerText = "Klaar!";
+        }
+    }, 300);
+}
+ 
+// 2. Undo functie
+function deleteItem() {
+    document.getElementById("item").innerText = "Item verwijderd";
+    document.getElementById("undoBtn").classList.remove("hidden");
+}
+ 
+function undoDelete() {
+    document.getElementById("item").innerText = "Item aanwezig";
+    document.getElementById("undoBtn").classList.add("hidden");
+}
+ 
+// 4. Form validatie
+function validateForm() {
+    let email = document.getElementById("email").value;
+    let error = document.getElementById("error");
+ 
+    if (!email.includes("@")) {
+        error.innerText = "Ongeldig emailadres";
+        return false;
+    }
+ 
+    error.innerText = "";
+    alert("Formulier verzonden!");
+    return true;
+}
+ 
+</script>
+ 
+</body>
+</html>
