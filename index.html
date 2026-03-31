@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Plex Remote Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="remote-controller">
+
+    <!-- HEADER: Koppelcode + Verbindingsstatus -->
+    <header class="header" id="header">
+        <div class="connection-info">
+            <span class="connection-label">Koppelcode</span>
+            <span class="connection-code">4829</span>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">Verbonden</span>
+        </div>
+    </header>
+
+    <!-- NOW PLAYING -->
+    <div class="now-playing" id="nowPlaying">
+        <div class="now-playing-art">🎬</div>
+        <div class="now-playing-info">
+            <div class="now-playing-title">Breaking Bad</div>
+            <div class="now-playing-subtitle">S5 · E16 — Felina</div>
+        </div>
+        <div class="now-playing-time">23:41</div>
+    </div>
+
+    <!-- ZOEKBALK -->
+    <div class="search-container" id="searchContainer">
+        <input type="text" class="search-bar" id="searchInput" placeholder="Zoek films en series...">
+        <span class="search-icon">🔍</span>
+    </div>
+
+    <!-- D-PAD NAVIGATIE -->
+    <div class="dpad-section">
+        <div class="dpad-container" id="dpad">
+            <button class="dpad-btn dpad-up" id="dpadUp" title="Omhoog">▲</button>
+            <button class="dpad-btn dpad-down" id="dpadDown" title="Omlaag">▼</button>
+            <button class="dpad-btn dpad-left" id="dpadLeft" title="Links">◀</button>
+            <button class="dpad-btn dpad-right" id="dpadRight" title="Rechts">▶</button>
+            <button class="dpad-btn dpad-ok" id="dpadOk" title="Selecteer">OK</button>
+        </div>
+    </div>
+
+    <!-- TERUG & HOME KNOPPEN -->
+    <div class="nav-buttons" id="navButtons">
+        <button class="nav-btn" id="backBtn">
+            <span class="icon">←</span>
+            Terug
+        </button>
+        <button class="nav-btn" id="homeBtn">
+            <span class="icon">⌂</span>
+            Home
+        </button>
+    </div>
+
+    <!-- MEDIA CONTROLS -->
+    <div class="media-section" id="mediaSection">
+        <div class="media-controls">
+            <button class="media-btn secondary" id="prevBtn" title="Vorige">⏮</button>
+            <button class="media-btn primary" id="playPauseBtn" title="Play / Pause">▶</button>
+            <button class="media-btn secondary" id="nextBtn" title="Volgende">⏭</button>
+        </div>
+
+        <!-- VOLUME SLIDER -->
+        <div class="volume-section" id="volumeSection">
+            <span class="volume-icon" id="muteBtn">🔇</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="65">
+            <span class="volume-icon">🔊</span>
+            <span class="volume-value" id="volumeValue">65%</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Volume slider waarde updaten (alleen visueel)
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    
+    volumeSlider.addEventListener('input', () => {
+        volumeValue.textContent = volumeSlider.value + '%';
+    });
+</script>
+
+</body>
+</html>
