@@ -8,34 +8,71 @@
 </head>
 <body>
 
-<div class="remote-controller">
+<!-- ============ LOGIN SCREEN ============ -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-card">
+        <div class="login-logo">🎬</div>
+        <h1 class="login-title">Plex Remote</h1>
+        <p class="login-subtitle">Log in met je Plex-account om je media te bedienen</p>
+        <button class="login-btn" id="loginBtn">Inloggen met Plex</button>
+        <p class="login-status" id="loginStatus"></p>
+    </div>
+</div>
 
-    <!-- HEADER: Koppelcode + Verbindingsstatus -->
+<!-- ============ REMOTE SCREEN ============ -->
+<div class="remote-controller" id="remoteScreen" style="display:none;">
+
+    <!-- HEADER: Status + Logout -->
     <header class="header" id="header">
-        <div class="connection-info">
-            <span class="connection-label">Koppelcode</span>
-            <span class="connection-code">4829</span>
-        </div>
         <div class="connection-status" id="connectionStatus">
             <span class="status-dot"></span>
             <span class="status-text">Verbonden</span>
         </div>
+        <button class="logout-btn" id="logoutBtn" title="Uitloggen">✕</button>
     </header>
 
+    <!-- DEVICE SELECTIE -->
+    <div class="device-section" id="deviceSection">
+        <div class="dropdown-group">
+            <label for="serverSelect">Server</label>
+            <select id="serverSelect" class="styled-select">
+                <option value="">Laden...</option>
+            </select>
+        </div>
+        <div class="dropdown-group">
+            <label for="clientSelect">Speler (TV/Tablet)</label>
+            <select id="clientSelect" class="styled-select">
+                <option value="">Laden...</option>
+            </select>
+        </div>
+        
+        <!-- Manual Connection Fallback -->
+        <div class="manual-connection-toggle">
+            <button id="toggleManualBtn" class="text-link">Apparaat niet in de lijst?</button>
+        </div>
+        
+        <div id="manualForm" class="manual-form hidden">
+            <input type="text" id="manualServerIp" placeholder="Server IP (bv. http://192.168.1.50:32400)" class="styled-input">
+            <input type="text" id="manualClientId" placeholder="Client ID (vind je in Plex info)" class="styled-input">
+            <button id="saveManualBtn" class="btn btn-secondary">Handmatig Verbinden</button>
+        </div>
+    </div>
+
     <!-- NOW PLAYING -->
-    <div class="now-playing" id="nowPlaying">
+    <div class="now-playing" id="nowPlaying" style="display:none;">
         <div class="now-playing-art">🎬</div>
         <div class="now-playing-info">
-            <div class="now-playing-title">Breaking Bad</div>
-            <div class="now-playing-subtitle">S5 · E16 — Felina</div>
+            <div class="now-playing-title">—</div>
+            <div class="now-playing-subtitle"></div>
         </div>
-        <div class="now-playing-time">23:41</div>
+        <div class="now-playing-time">0:00</div>
     </div>
 
     <!-- ZOEKBALK -->
     <div class="search-container" id="searchContainer">
-        <input type="text" class="search-bar" id="searchInput" placeholder="Zoek films en series...">
+        <input type="text" class="search-bar" id="searchInput" placeholder="Zoek films en series..." autocomplete="off">
         <span class="search-icon">🔍</span>
+        <div class="search-results" id="searchResults"></div>
     </div>
 
     <!-- D-PAD NAVIGATIE -->
@@ -61,7 +98,7 @@
         </button>
     </div>
 
-    <!-- MEDIA CONTROLS -->
+    <!-- MEDIA CONTROLS + VOLUME -->
     <div class="media-section" id="mediaSection">
         <div class="media-controls">
             <button class="media-btn secondary" id="prevBtn" title="Vorige">⏮</button>
@@ -69,7 +106,6 @@
             <button class="media-btn secondary" id="nextBtn" title="Volgende">⏭</button>
         </div>
 
-        <!-- VOLUME SLIDER -->
         <div class="volume-section" id="volumeSection">
             <span class="volume-icon" id="muteBtn">🔇</span>
             <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="65">
@@ -80,15 +116,9 @@
 
 </div>
 
-<script>
-    // Volume slider waarde updaten (alleen visueel)
-    const volumeSlider = document.getElementById('volumeSlider');
-    const volumeValue = document.getElementById('volumeValue');
-    
-    volumeSlider.addEventListener('input', () => {
-        volumeValue.textContent = volumeSlider.value + '%';
-    });
-</script>
+<!-- TOAST NOTIFICATIONS -->
+<div class="toast" id="toast"></div>
 
+<script src="app.js"></script>
 </body>
 </html>
