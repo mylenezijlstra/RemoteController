@@ -58,16 +58,29 @@ async function startLogin() {
         const { id, code } = await pinRes.json();
 
         // Stap 2: Open Plex login in nieuw tabblad
-        const authUrl = `https://app.plex.tv/auth#?clientID=${getAppClientId()}&code=${code}&context%5Bdevice%5D%5Bproduct%5D=Plex%20Remote%20Controller`;
+        const clientID = getAppClientId();
+        console.log(`[AUTH] ClientID: ${clientID}, PIN: ${code}`);
+
+        // Versimpelde URL voor maximale compatibiliteit
+        const authUrl = `https://app.plex.tv/auth#?` + 
+            `code=${encodeURIComponent(code)}` +
+            `&clientID=${encodeURIComponent(clientID)}` +
+            `&X-Plex-Product=PlexRemote` +
+            `&X-Plex-Client-Identifier=${encodeURIComponent(clientID)}`;
+
         window.open(authUrl, '_blank');
 
-        loginStatus.textContent = 'Log in bij Plex in het nieuwe tabblad...';
+        loginStatus.innerHTML = `
+            Log in bij Plex in het nieuwe tabblad...<br>
+            <small style="color: grey; font-size: 10px;">ID: ${clientID}</small>
+        `;
 
         // Stap 3: Poll tot de gebruiker heeft ingelogd
         const pollInterval = setInterval(async () => {
             try {
                 const checkRes = await plexFetch(`/api/auth/pin/${id}`);
-                const { authToken } = await checkRes.json();
+                const data = await checkRes.json();
+                const authToken = data.authToken;
 
                 if (authToken) {
                     clearInterval(pollInterval);

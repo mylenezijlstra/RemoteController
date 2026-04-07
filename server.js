@@ -11,8 +11,8 @@ const parser = new XMLParser({
     attributeNamePrefix: ""
 });
 
-const DEFAULT_PRODUCT = 'Plex Web';
-const DEFAULT_VERSION = '4.133.2';
+const DEFAULT_PRODUCT = 'Plex Remote Controller';
+const DEFAULT_VERSION = '1.0.0';
 
 // Plex headers genereren
 function plexHeaders(token, clientId = 'unique-plex-remote-id') {
@@ -52,14 +52,24 @@ function getClientId(req) {
 app.post('/api/auth/pin', async (req, res) => {
     try {
         const cId = getClientId(req);
+        console.log(`[AUTH] PIN aanvraag voor ClientID: ${cId}`);
+        
         const response = await fetch('https://plex.tv/api/v2/pins?strong=true', {
             method: 'POST',
             headers: plexHeaders(null, cId)
         });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[AUTH] Plex API fout:', response.status, errorText);
+            return res.status(response.status).json({ error: 'Fout bij Plex API' });
+        }
+
         const data = await response.json();
+        console.log(`[AUTH] PIN Ontvangen: ${data.code} (ID: ${data.id})`);
         res.json({ id: data.id, code: data.code });
     } catch (err) {
-        console.error('PIN request failed:', err);
+        console.error('[AUTH] PIN request failed:', err);
         res.status(500).json({ error: 'Kan geen PIN aanvragen' });
     }
 });
@@ -105,11 +115,16 @@ app.get('/api/resources', async (req, res) => {
             console.warn('[Resources] V2 API mislukt:', e.message);
         }
 
-        // Poging 2: V1 API (vaak XML)
+        // Poging 2: V1 API (vaak XML) als V2 leeg is
         if (data.length === 0) {
             console.log('[Resources] V2 leeg of mislukt, probeer V1...');
             const v1Url = `https://plex.tv/api/resources?includeHttps=1&includeRelay=1&X-Plex-Token=${token}`;
-            const responsev1 = await fetch(v1Url, { headers: headers });
+            const responsev1 = await fetch(v1Url, { 
+                headers: {
+                    ...headers,
+                    'X-Plex-Token': token // Expliciet toevoegen voor de zekerheid
+                }
+            });
             
             if (responsev1.ok) {
                 const contentType = responsev1.headers.get('content-type') || '';
