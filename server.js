@@ -101,28 +101,28 @@ app.get('/api/resources', async (req, res) => {
         console.log(`[Resources] Ophalen voor token: ${token ? token.substring(0, 5) + '...' : 'MISSING'} (CID: ${cId})`);
         
         // Poging 1: V2 JSON API (clients.plex.tv)
-        let data = [];
+        let rawData = [];
         try {
             const responsev2 = await fetch('https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1', {
                 headers: headers
             });
             if (responsev2.ok) {
                 const json = await responsev2.json();
-                data = Array.isArray(json) ? json : [];
-                console.log(`[Resources] V2 API gaf ${data.length} items terug.`);
+                rawData = Array.isArray(json) ? json : (json ? [json] : []);
+                console.log(`[Resources] V2 API gaf ${rawData.length} items terug.`);
             }
         } catch (e) {
             console.warn('[Resources] V2 API mislukt:', e.message);
         }
 
         // Poging 2: V1 API (vaak XML) als V2 leeg is
-        if (data.length === 0) {
+        if (rawData.length === 0) {
             console.log('[Resources] V2 leeg of mislukt, probeer V1...');
             const v1Url = `https://plex.tv/api/resources?includeHttps=1&includeRelay=1&X-Plex-Token=${token}`;
             const responsev1 = await fetch(v1Url, { 
                 headers: {
                     ...headers,
-                    'X-Plex-Token': token // Expliciet toevoegen voor de zekerheid
+                    'X-Plex-Token': token
                 }
             });
             
@@ -132,27 +132,44 @@ app.get('/api/resources', async (req, res) => {
 
                 if (contentType.includes('application/json')) {
                     const v1Data = JSON.parse(text);
-                    data = (v1Data.MediaContainer && v1Data.MediaContainer.Device) ? v1Data.MediaContainer.Device : [];
+                    const mc = v1Data.MediaContainer;
+                    if (mc) {
+                        // Verzamel alles wat op een device of server lijkt
+                        const items = [
+                            ...(Array.isArray(mc.Device) ? mc.Device : (mc.Device ? [mc.Device] : [])),
+                            ...(Array.isArray(mc.Server) ? mc.Server : (mc.Server ? [mc.Server] : [])),
+                            ...(Array.isArray(mc.Hub) ? mc.Hub : (mc.Hub ? [mc.Hub] : []))
+                        ];
+                        rawData = items;
+                    }
                 } else {
                     const jsonObj = parser.parse(text);
                     const mc = jsonObj.MediaContainer;
-                    if (mc && mc.Device) {
-                        data = Array.isArray(mc.Device) ? mc.Device : [mc.Device];
-                        data = data.map(device => ({
-                            ...device,
-                            connections: Array.isArray(device.Connection) ? device.Connection : (device.Connection ? [device.Connection] : [])
-                        }));
-                    } else if (mc && mc.Server) {
-                        data = Array.isArray(mc.Server) ? mc.Server : [mc.Server];
-                        data = data.map(server => ({
-                            ...server,
-                            provides: 'server',
-                            connections: Array.isArray(server.Connection) ? server.Connection : (server.Connection ? [server.Connection] : [])
-                        }));
+                    if (mc) {
+                        const items = [
+                            ...(Array.isArray(mc.Device) ? mc.Device : (mc.Device ? [mc.Device] : [])),
+                            ...(Array.isArray(mc.Server) ? mc.Server : (mc.Server ? [mc.Server] : [])),
+                            ...(Array.isArray(mc.Hub) ? mc.Hub : (mc.Hub ? [mc.Hub] : []))
+                        ];
+                        rawData = items;
                     }
                 }
             }
         }
+
+        // UNIFORM NORMALISATIE
+        const data = rawData.map(device => {
+            // Zorg dat connections altijd een array is
+            let conns = device.connections || device.Connection || [];
+            if (!Array.isArray(conns)) conns = [conns];
+            
+            return {
+                ...device,
+                connections: conns,
+                // Server fallback
+                provides: device.provides || (device.product === 'Plex Media Server' ? 'server' : '')
+            };
+        });
 
         console.log(`[Resources] Totaal gevonden: ${data.length || 0}`);
         res.json(data);

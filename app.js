@@ -16,9 +16,14 @@ function getAppClientId() {
 }
 
 // === CHECK ORIGIN ===
+// Belangrijk: De backend draait op poort 3000. Als we op een andere poort zitten (zoals XAMPP),
+// dan kunnen de API calls falen.
 if (window.location.port !== '3000' && window.location.hostname === 'localhost') {
-    console.warn('⚠️ Waarschuwing: Je gebruikt waarschijnlijk de verkeerde URL (XAMPP).');
-    console.warn('Gebruik http://localhost:3000 voor de volledige functionaliteit.');
+    const msg = '⚠️ Je gebruikt poort ' + window.location.port + '. Gebruik http://localhost:3000 voor de volledige functionaliteit van de Plex Remote!';
+    console.warn(msg);
+    setTimeout(() => {
+        showToast('Gebruik poort 3000 voor de beste ervaring');
+    }, 2000);
 }
 
 // === STATE ===
@@ -120,23 +125,35 @@ async function loadResources() {
             return;
         }
 
-        const resources = await res.json();
+        let resources = await res.json();
+        
+        // Veiligheidscheck: zorg dat het een lijst is
+        if (!Array.isArray(resources)) {
+            console.warn('[Resources] Ontvangen data is geen lijst, bezig met herstellen...', resources);
+            resources = resources ? [resources] : [];
+        }
+
         console.log('[Resources] Totaal aantal items:', resources.length);
         if (resources.length === 0) {
             console.warn('[Resources] Geen apparaten gevonden. Gebruik handmatige invoer indien nodig.');
+            showToast('Geen apparaten gevonden');
+        } else {
+            showToast(`Gevonden: ${resources.length} apparaten`);
         }
 
         // Servers en players scheiden
         const servers = resources.filter(r => {
+            if (!r) return false;
             const isServer = (r.provides && r.provides.includes('server')) || (r.product === 'Plex Media Server');
-            if (isServer) console.log('  -> Gevonden server:', r.name);
+            if (isServer) console.log('  -> Gevonden server:', r.name || r.device);
             return isServer;
         });
 
         const players = resources.filter(r => {
+            if (!r) return false;
             const isPlayer = (r.provides && (r.provides.includes('player') || r.provides.includes('client'))) ||
                             (r.product && (r.product.includes('Plex for') || r.product === 'Plex Web'));
-            if (isPlayer) console.log('  -> Gevonden player:', r.name);
+            if (isPlayer) console.log('  -> Gevonden player:', r.name || r.device);
             return isPlayer;
         });
 
@@ -411,6 +428,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     // === DEVICE SELECTIE ===
+    // === DEVICE SELECTIE ===
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('refreshBtn');
+        btn.classList.add('spinning');
+        showToast('Bezig met zoeken...');
+        await loadResources();
+        setTimeout(() => btn.classList.remove('spinning'), 1000);
+    });
+
     document.getElementById('serverSelect').addEventListener('change', (e) => {
         const selected = e.target.selectedOptions[0];
         state.serverUrl = e.target.value;
@@ -461,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateConnectionStatus();
         pollSessions();
     });
+
 
     // === CONTROLS ===
     document.getElementById('dpadUp').addEventListener('click', cmdUp);

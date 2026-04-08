@@ -638,20 +638,70 @@ body {
     border-color: rgba(255, 82, 82, 0.4);
 }
 
+/* === DEVICE SELECTIE === */
+.device-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+.device-header h3 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.refresh-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.refresh-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--plex-orange);
+    transform: scale(1.05);
+}
+
+.refresh-btn.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* === MANUAL CONNECTION === */
 .manual-connection-toggle {
-    margin-top: 15px;
+    margin-top: 8px;
     text-align: center;
 }
 
 .text-link {
     background: none;
     border: none;
-    color: var(--secondary);
-    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-size: 12px;
     cursor: pointer;
     text-decoration: underline;
-    opacity: 0.8;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    font-family: 'Inter', sans-serif;
 }
 
 .text-link:hover {
@@ -663,10 +713,10 @@ body {
     flex-direction: column;
     gap: 10px;
     margin-top: 15px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
-    border: 1px border-subtle;
+    border: 1px solid var(--glass-border);
 }
 
 .manual-form.hidden {
@@ -674,23 +724,37 @@ body {
 }
 
 .styled-input {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
-    padding: 10px;
+    padding: 10px 12px;
     color: white;
-    font-size: 0.9rem;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.styled-input:focus {
+    border-color: var(--plex-orange);
 }
 
 .btn-secondary {
-    background: var(--secondary);
+    background: rgba(255, 255, 255, 0.1);
     color: white;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    filter: brightness(1.2);
+    background: var(--plex-orange);
+    color: #1a1a2e;
+    border-color: var(--plex-orange);
 }
-
 .dropdown-group {
     display: flex;
     flex-direction: column;
