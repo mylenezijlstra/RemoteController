@@ -3,78 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Plex Remote Controller</title>
+    <title>YouTube Remote Controller</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ============ LOGIN SCREEN ============ -->
-<div class="login-screen" id="loginScreen">
-    <div class="login-card">
-        <div class="login-logo">🎬</div>
-        <h1 class="login-title">Plex Remote</h1>
-        <p class="login-subtitle">Log in met je Plex-account om je media te bedienen</p>
-        <button class="login-btn" id="loginBtn">Inloggen met Plex</button>
-        <p class="login-status" id="loginStatus"></p>
-    </div>
-</div>
-
 <!-- ============ REMOTE SCREEN ============ -->
-<div class="remote-controller" id="remoteScreen" style="display:none;">
+<div class="remote-controller" id="remoteScreen">
 
-    <!-- HEADER: Status + Logout -->
+    <!-- HEADER: Status + TV ID -->
     <header class="header" id="header">
+        <div class="logo-section">
+            <span class="yt-logo">🎬</span>
+            <span class="yt-text">YouTube Remote</span>
+        </div>
         <div class="connection-status" id="connectionStatus">
             <span class="status-dot"></span>
-            <span class="status-text">Verbonden</span>
+            <span class="status-text">Laden...</span>
         </div>
-        <button class="logout-btn" id="logoutBtn" title="Uitloggen">✕</button>
     </header>
 
-    <!-- DEVICE SELECTIE -->
-    <div class="device-section" id="deviceSection">
-        <div class="device-header">
-            <h3>Apparaten</h3>
-            <button id="refreshBtn" class="refresh-btn" title="Lijst vernieuwen">🔄</button>
-        </div>
-        <div class="dropdown-group">
-            <label for="serverSelect">Server</label>
-            <select id="serverSelect" class="styled-select">
-                <option value="">Laden...</option>
-            </select>
-        </div>
-        <div class="dropdown-group">
-            <label for="clientSelect">Speler (TV/Tablet)</label>
-            <select id="clientSelect" class="styled-select">
-                <option value="">Laden...</option>
-            </select>
-        </div>
-        
-        <!-- Manual Connection Fallback -->
-        <div class="manual-connection-toggle">
-            <button id="toggleManualBtn" class="text-link">Kan apparaat niet vinden? Handmatig...</button>
-        </div>
-        
-        <div id="manualForm" class="manual-form hidden">
-            <input type="text" id="manualServerIp" placeholder="Server IP (bv. http://192.168.1.50:32400)" class="styled-input">
-            <input type="text" id="manualClientId" placeholder="Client ID (vind je in Plex info)" class="styled-input">
-            <button id="saveManualBtn" class="btn btn-secondary">Verbinden</button>
-        </div>
-    </div>
-
-    <!-- NOW PLAYING -->
-    <div class="now-playing" id="nowPlaying" style="display:none;">
-        <div class="now-playing-art">🎬</div>
-        <div class="now-playing-info">
-            <div class="now-playing-title">—</div>
-            <div class="now-playing-subtitle"></div>
-        </div>
-        <div class="now-playing-time">0:00</div>
+    <!-- INSTRUCTIONS -->
+    <div class="instructions-section">
+        <p>Open <b>/screen.html</b> op je PC om te beginnen.</p>
     </div>
 
     <!-- ZOEKBALK -->
     <div class="search-container" id="searchContainer">
-        <input type="text" class="search-bar" id="searchInput" placeholder="Zoek films en series..." autocomplete="off">
+        <input type="text" class="search-bar" id="searchInput" placeholder="Zoek op YouTube..." autocomplete="off">
         <span class="search-icon">🔍</span>
         <div class="search-results" id="searchResults"></div>
     </div>
@@ -82,39 +38,39 @@
     <!-- D-PAD NAVIGATIE -->
     <div class="dpad-section">
         <div class="dpad-container" id="dpad">
-            <button class="dpad-btn dpad-up" id="dpadUp" title="Omhoog">▲</button>
-            <button class="dpad-btn dpad-down" id="dpadDown" title="Omlaag">▼</button>
-            <button class="dpad-btn dpad-left" id="dpadLeft" title="Links">◀</button>
-            <button class="dpad-btn dpad-right" id="dpadRight" title="Rechts">▶</button>
-            <button class="dpad-btn dpad-ok" id="dpadOk" title="Selecteer">OK</button>
+            <button class="dpad-btn dpad-up" id="dpadUp" title="Volume Omhoog">▲</button>
+            <button class="dpad-btn dpad-down" id="dpadDown" title="Volume Omlaag">▼</button>
+            <button class="dpad-btn dpad-left" id="dpadLeft" title="5s Terug">◀</button>
+            <button class="dpad-btn dpad-right" id="dpadRight" title="5s Vooruit">▶</button>
+            <button class="dpad-btn dpad-ok" id="dpadOk" title="Play">OK</button>
         </div>
     </div>
 
     <!-- TERUG & HOME KNOPPEN -->
     <div class="nav-buttons" id="navButtons">
         <button class="nav-btn" id="backBtn">
-            <span class="icon">←</span>
-            Terug
+            <span class="icon">⏹</span>
+            Stop
         </button>
         <button class="nav-btn" id="homeBtn">
             <span class="icon">⌂</span>
-            Home
+            Reset
         </button>
     </div>
 
     <!-- MEDIA CONTROLS + VOLUME -->
     <div class="media-section" id="mediaSection">
         <div class="media-controls">
-            <button class="media-btn secondary" id="prevBtn" title="Vorige">⏮</button>
+            <button class="media-btn secondary" id="prevBtn" title="10s Terug">⏮</button>
             <button class="media-btn primary" id="playPauseBtn" title="Play / Pause">▶</button>
-            <button class="media-btn secondary" id="nextBtn" title="Volgende">⏭</button>
+            <button class="media-btn secondary" id="nextBtn" title="10s Vooruit">⏭</button>
         </div>
 
         <div class="volume-section" id="volumeSection">
-            <span class="volume-icon" id="muteBtn">🔇</span>
-            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="65">
+            <span class="volume-icon">🔇</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
             <span class="volume-icon">🔊</span>
-            <span class="volume-value" id="volumeValue">65%</span>
+            <span class="volume-value" id="volumeValue">100%</span>
         </div>
     </div>
 
@@ -123,6 +79,8 @@
 <!-- TOAST NOTIFICATIONS -->
 <div class="toast" id="toast"></div>
 
+<!-- Libraries -->
+<script src="/socket.io/socket.io.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

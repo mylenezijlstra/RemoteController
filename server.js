@@ -1,248 +1,87 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const http = require('http');
 const path = require('path');
 const cors = require('cors');
-const { XMLParser } = require('fast-xml-parser');
+const fetch = require('node-fetch');
+const { Server } = require('socket.io');
 
 const app = express();
-const PORT = 3000;
-const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: ""
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
 });
 
-const DEFAULT_PRODUCT = 'Plex Remote Controller';
-const DEFAULT_VERSION = '1.0.0';
+const PORT = 3000;
 
-// Plex headers genereren
-function plexHeaders(token, clientId = 'unique-plex-remote-id') {
-    const headers = {
-        'Accept': 'application/json',
-        'X-Plex-Client-Identifier': clientId,
-        'X-Plex-Product': DEFAULT_PRODUCT,
-        'X-Plex-Version': DEFAULT_VERSION,
-        'X-Plex-Platform': 'Web',
-        'X-Plex-Platform-Version': '1.0',
-        'X-Plex-Device': 'Windows',
-        'X-Plex-Device-Name': 'Plex Remote Controller',
-        'X-Plex-Language': 'nl'
-    };
-    if (token) {
-        headers['X-Plex-Token'] = token;
-    }
-    return headers;
-}
+// === CONFIGURATIE ===
+// Voeg hier je YouTube API Key toe (v3)
+// https://console.cloud.google.com/apis/library/youtube.googleapis.com
+const YOUTUBE_API_KEY = 'AIzaSyB_TjKdDf1ibb36DvVpk4X0_ddFfrBKOZU';
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // =============================================
-// API HELPERS
+// YOUTUBE SEARCH API PROXY
 // =============================================
-
-function getClientId(req) {
-    return req.headers['x-plex-client-identifier'] || req.query.clientId || 'unique-plex-remote-id';
-}
-
-// =============================================
-// 1. PIN LOGIN
-// =============================================
-
-app.post('/api/auth/pin', async (req, res) => {
-    try {
-        const cId = getClientId(req);
-        console.log(`[AUTH] PIN aanvraag voor ClientID: ${cId}`);
-        
-        const response = await fetch('https://plex.tv/api/v2/pins?strong=true', {
-            method: 'POST',
-            headers: plexHeaders(null, cId)
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[AUTH] Plex API fout:', response.status, errorText);
-            return res.status(response.status).json({ error: 'Fout bij Plex API' });
-        }
-
-        const data = await response.json();
-        console.log(`[AUTH] PIN Ontvangen: ${data.code} (ID: ${data.id})`);
-        res.json({ id: data.id, code: data.code });
-    } catch (err) {
-        console.error('[AUTH] PIN request failed:', err);
-        res.status(500).json({ error: 'Kan geen PIN aanvragen' });
-    }
-});
-
-app.get('/api/auth/pin/:id', async (req, res) => {
-    try {
-        const cId = getClientId(req);
-        const response = await fetch(`https://plex.tv/api/v2/pins/${req.params.id}`, {
-            headers: plexHeaders(null, cId)
-        });
-        const data = await response.json();
-        res.json({ authToken: data.authToken || null });
-    } catch (err) {
-        console.error('PIN check failed:', err);
-        res.status(500).json({ error: 'Kan PIN status niet ophalen' });
-    }
-});
-
-// =============================================
-// 2. RESOURCES (servers + clients)
-// =============================================
-
-app.get('/api/resources', async (req, res) => {
-    try {
-        const { token } = req.query;
-        const cId = getClientId(req);
-        const headers = plexHeaders(token, cId);
-        
-        console.log(`[Resources] Ophalen voor token: ${token ? token.substring(0, 5) + '...' : 'MISSING'} (CID: ${cId})`);
-        
-        // Poging 1: V2 JSON API (clients.plex.tv)
-        let rawData = [];
-        try {
-            const responsev2 = await fetch('https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1', {
-                headers: headers
-            });
-            if (responsev2.ok) {
-                const json = await responsev2.json();
-                rawData = Array.isArray(json) ? json : (json ? [json] : []);
-                console.log(`[Resources] V2 API gaf ${rawData.length} items terug.`);
-            }
-        } catch (e) {
-            console.warn('[Resources] V2 API mislukt:', e.message);
-        }
-
-        // Poging 2: V1 API (vaak XML) als V2 leeg is
-        if (rawData.length === 0) {
-            console.log('[Resources] V2 leeg of mislukt, probeer V1...');
-            const v1Url = `https://plex.tv/api/resources?includeHttps=1&includeRelay=1&X-Plex-Token=${token}`;
-            const responsev1 = await fetch(v1Url, { 
-                headers: {
-                    ...headers,
-                    'X-Plex-Token': token
-                }
-            });
-            
-            if (responsev1.ok) {
-                const contentType = responsev1.headers.get('content-type') || '';
-                const text = await responsev1.text();
-
-                if (contentType.includes('application/json')) {
-                    const v1Data = JSON.parse(text);
-                    const mc = v1Data.MediaContainer;
-                    if (mc) {
-                        // Verzamel alles wat op een device of server lijkt
-                        const items = [
-                            ...(Array.isArray(mc.Device) ? mc.Device : (mc.Device ? [mc.Device] : [])),
-                            ...(Array.isArray(mc.Server) ? mc.Server : (mc.Server ? [mc.Server] : [])),
-                            ...(Array.isArray(mc.Hub) ? mc.Hub : (mc.Hub ? [mc.Hub] : []))
-                        ];
-                        rawData = items;
-                    }
-                } else {
-                    const jsonObj = parser.parse(text);
-                    const mc = jsonObj.MediaContainer;
-                    if (mc) {
-                        const items = [
-                            ...(Array.isArray(mc.Device) ? mc.Device : (mc.Device ? [mc.Device] : [])),
-                            ...(Array.isArray(mc.Server) ? mc.Server : (mc.Server ? [mc.Server] : [])),
-                            ...(Array.isArray(mc.Hub) ? mc.Hub : (mc.Hub ? [mc.Hub] : []))
-                        ];
-                        rawData = items;
-                    }
-                }
-            }
-        }
-
-        // UNIFORM NORMALISATIE
-        const data = rawData.map(device => {
-            // Zorg dat connections altijd een array is
-            let conns = device.connections || device.Connection || [];
-            if (!Array.isArray(conns)) conns = [conns];
-            
-            return {
-                ...device,
-                connections: conns,
-                // Server fallback
-                provides: device.provides || (device.product === 'Plex Media Server' ? 'server' : '')
-            };
-        });
-
-        console.log(`[Resources] Totaal gevonden: ${data.length || 0}`);
-        res.json(data);
-    } catch (err) {
-        console.error('[Resources] FATAL ERROR:', err);
-        res.status(500).json({ error: 'Kan resources niet ophalen door serverfout.' });
-    }
-});
-
-// =============================================
-// 3. COMMANDS NAAR PLAYER
-// =============================================
-
-app.post('/api/command', async (req, res) => {
-    try {
-        const { serverUrl, token, clientId, type, command, params } = req.body;
-        const cId = getClientId(req);
-        
-        let url = `${serverUrl}/player/${type}/${command}?X-Plex-Token=${token}&X-Plex-Target-Client-Identifier=${clientId}`;
-        
-        if (params && Object.keys(params).length > 0) {
-            const qs = new URLSearchParams(params).toString();
-            url += `&${qs}`;
-        }
-
-        console.log(`[Command] Sending ${type}/${command} to ${clientId} via ${serverUrl}`);
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: plexHeaders(token, cId)
-        });
-
-        res.json({ ok: response.ok, status: response.status });
-    } catch (err) {
-        console.error('Command failed:', err);
-        res.status(500).json({ error: 'Command mislukt' });
-    }
-});
-
-// =============================================
-// 4. SEARCH & SESSIONS
-// =============================================
-
 app.get('/api/search', async (req, res) => {
     try {
-        const { serverUrl, token, query } = req.query;
-        const cId = getClientId(req);
-        const response = await fetch(`${serverUrl}/search?query=${encodeURIComponent(query)}&X-Plex-Token=${token}`, {
-            headers: plexHeaders(token, cId)
-        });
-        const text = await response.text();
-        const contentType = response.headers.get('content-type') || '';
-        res.json(contentType.includes('json') ? JSON.parse(text) : parser.parse(text));
+        const { q } = req.query;
+        if (!q) return res.status(400).json({ error: 'Geen zoekterm opgegeven' });
+
+        if (!YOUTUBE_API_KEY) {
+            console.warn('[YouTube] Geen API-key geconfigureerd.');
+            return res.status(500).json({ error: 'YouTube API Key ontbreekt in server.js' });
+        }
+
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(q)}&type=video&key=${YOUTUBE_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+            console.error('[YouTube] API Fout:', data.error);
+            return res.status(data.error.code || 500).json(data.error);
+        }
+
+        // Simpel formaat terugsturen
+        const results = data.items.map(item => ({
+            id: item.id.videoId,
+            title: item.snippet.title,
+            channel: item.snippet.channelTitle,
+            thumbnail: item.snippet.thumbnails.default.url
+        }));
+
+        res.json(results);
     } catch (err) {
+        console.error('Search failed:', err);
         res.status(500).json({ error: 'Zoeken mislukt' });
     }
 });
 
-app.get('/api/sessions', async (req, res) => {
-    try {
-        const { serverUrl, token } = req.query;
-        const cId = getClientId(req);
-        const response = await fetch(`${serverUrl}/status/sessions?X-Plex-Token=${token}`, {
-            headers: plexHeaders(token, cId)
-        });
-        const text = await response.text();
-        const contentType = response.headers.get('content-type') || '';
-        res.json(contentType.includes('json') ? JSON.parse(text) : parser.parse(text));
-    } catch (err) {
-        res.status(500).json({ error: 'Sessies mislukt' });
-    }
+// =============================================
+// SOCKET.IO SIGNALING (Remote -> Screen)
+// =============================================
+io.on('connection', (socket) => {
+    console.log('📱 Nieuwe client verbonden:', socket.id);
+
+    // Wanneer de remote een commando stuurt
+    socket.on('command', (data) => {
+        console.log(`[Command] ${data.type}:`, data.value || '');
+        // Stuur door naar alle andere clients (het scherm)
+        socket.broadcast.emit('execute', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('👋 Client ontkoppeld');
+    });
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🎮 Plex Remote Controller draait op http://localhost:${PORT}\n`);
+server.listen(PORT, () => {
+    console.log(`\n🔴 YouTube Remote Controller draait op http://localhost:${PORT}`);
+    console.log(`🖥️  Open http://localhost:${PORT}/screen.html op je PC`);
+    console.log(`📱 Open http://localhost:${PORT} op je telefoon\n`);
 });

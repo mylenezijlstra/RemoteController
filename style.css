@@ -8,16 +8,16 @@
 }
 
 :root {
-    --plex-orange: rgb(235, 175, 0);
-    --plex-orange-glow: rgba(235, 175, 0, 0.3);
-    --bg-primary: rgb(24, 33, 134);
-    --bg-secondary: rgb(109, 16, 82);
+    --yt-red: #ff0000;
+    --yt-red-glow: rgba(255, 0, 0, 0.3);
+    --bg-primary: #0f0f0f;
+    --bg-secondary: #212121;
     --bg-card: rgba(255, 255, 255, 0.05);
     --bg-card-hover: rgba(255, 255, 255, 0.1);
     --text-primary: #ffffff;
-    --text-secondary: #b8b8cc;
-    --text-muted: #7a7a99;
-    --border-color: rgba(255, 255, 255, 0.08);
+    --text-secondary: #aaaaaa;
+    --text-muted: #717171;
+    --border-color: rgba(255, 255, 255, 0.1);
     --success: #00c853;
     --danger: #ff5252;
     --glass-bg: rgba(255, 255, 255, 0.06);
@@ -26,8 +26,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, rgb(109, 16, 82) 0%, rgb(24, 33, 134) 100%);
-    background-attachment: fixed;
+    background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
     display: flex;
@@ -53,10 +52,25 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: var(--glass-bg);
+    background: #000000;
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    backdrop-filter: blur(20px);
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.yt-logo {
+    font-size: 24px;
+}
+
+.yt-text {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.5px;
 }
 
 .connection-info {
@@ -81,33 +95,17 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-.connection-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    background: rgba(0, 200, 83, 0.1);
-    border: 1px solid rgba(0, 200, 83, 0.2);
+.instructions-section {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
 }
 
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--success);
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.status-text {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--success);
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
-    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0, 200, 83, 0); }
+.instructions-section b {
+    color: var(--yt-red);
 }
 
 /* === SEARCH BAR === */
@@ -135,8 +133,8 @@ body {
 }
 
 .search-bar:focus {
-    border-color: var(--plex-orange);
-    box-shadow: 0 0 0 3px var(--plex-orange-glow);
+    border-color: var(--yt-red);
+    box-shadow: 0 0 0 3px var(--yt-red-glow);
 }
 
 .search-icon {
@@ -151,7 +149,7 @@ body {
 }
 
 .search-bar:focus ~ .search-icon {
-    color: var(--plex-orange);
+    color: var(--yt-red);
 }
 
 /* === D-PAD === */
@@ -184,8 +182,8 @@ body {
 
 .dpad-btn:hover {
     background: var(--bg-card-hover);
-    border-color: var(--plex-orange);
-    color: var(--plex-orange);
+    border-color: var(--yt-red);
+    color: var(--yt-red);
 }
 
 .dpad-btn:active {
@@ -244,11 +242,11 @@ body {
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 1px;
-    background: linear-gradient(135deg, var(--plex-orange), #cc8800);
+    background: var(--yt-red);
     border: 2px solid rgba(255, 255, 255, 0.15);
-    color: #1a1a2e;
+    color: #ffffff;
     box-shadow: 
-        0 4px 20px var(--plex-orange-glow),
+        0 4px 20px var(--yt-red-glow),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -333,7 +331,7 @@ body {
 
 .media-btn:hover {
     color: var(--text-primary);
-    border-color: var(--plex-orange);
+    border-color: var(--yt-red);
 }
 
 .media-btn:active {
@@ -352,10 +350,10 @@ body {
     height: 68px;
     border-radius: 50%;
     font-size: 26px;
-    background: linear-gradient(135deg, var(--plex-orange), #cc8800);
+    background: var(--yt-red);
     border: 2px solid rgba(255, 255, 255, 0.15);
-    color: #1a1a2e;
-    box-shadow: 0 4px 20px var(--plex-orange-glow);
+    color: #ffffff;
+    box-shadow: 0 4px 20px var(--yt-red-glow);
 }
 
 .media-btn.primary:hover {
@@ -382,7 +380,7 @@ body {
 }
 
 .volume-icon:hover {
-    color: var(--plex-orange);
+    color: var(--yt-red);
 }
 
 .volume-slider {
@@ -402,9 +400,9 @@ body {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--plex-orange);
+    background: var(--yt-red);
     cursor: pointer;
-    box-shadow: 0 2px 8px var(--plex-orange-glow);
+    box-shadow: 0 2px 8px var(--yt-red-glow);
     transition: all 0.2s ease;
 }
 
@@ -791,36 +789,21 @@ body {
 }
 
 .device-select {
-    flex: 1;
-    padding: 12px 14px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    color: var(--text-primary);
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-    cursor: pointer;
     outline: none;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
+    cursor: pointer;
     appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a7a99' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
 }
 
-.device-select:focus {
+.styled-select:focus {
     border-color: var(--plex-orange);
     box-shadow: 0 0 0 3px var(--plex-orange-glow);
 }
 
-.device-select option {
-    background: #1a1a2e;
-    color: var(--text-primary);
-    padding: 8px;
-}
+/* Verwijder Plex-specifieke debug styles */
+
+/* Verwijder dropdown styles */
 
 /* === SEARCH RESULTS === */
 .search-results {
@@ -870,7 +853,7 @@ body {
 }
 
 .search-result-item:hover {
-    background: rgba(235, 175, 0, 0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .result-thumb {
