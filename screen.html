@@ -4,145 +4,394 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Screen — Remote Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --yt-red: #f00;
+            --bg-dark: #0f0f0f;
+            --card-bg: #1e1e1e;
+        }
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
             color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
         }
-        #player {
+
+        /* === PLAYER === */
+        #player-container {
             width: 100vw;
             height: 100vh;
+            display: none;
+            position: relative;
         }
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
+        #player-container iframe {
             width: 100%;
             height: 100%;
+        }
+
+        /* === HOME GRID === */
+        #home-container {
+            width: 100vw;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.8);
-            z-index: 10;
-            transition: opacity 0.5s;
+            padding: 30px 40px;
+            box-sizing: border-box;
+            overflow: hidden;
         }
-        .overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .status {
-            font-size: 24px;
+        .home-header {
+            font-size: 28px;
             font-weight: 700;
-            color: #ff0000;
-            margin-bottom: 10px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .info {
-            font-size: 16px;
-            color: #ccc;
+        .home-header .logo { color: var(--yt-red); font-size: 36px; }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
         }
+        .video-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid transparent;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
+        }
+        .video-card.focused {
+            border-color: #fff;
+            transform: scale(1.06);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
+        }
+        .video-card .thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #222;
+            object-fit: cover;
+            display: block;
+        }
+        .video-card .info {
+            padding: 10px 12px;
+        }
+        .video-card .title {
+            font-size: 13px;
+            font-weight: 600;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+        }
+        .video-card .channel {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        /* === STATUS === */
+        .status-bar {
+            position: fixed;
+            bottom: 16px;
+            right: 20px;
+            background: rgba(0,0,0,0.75);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #888;
+            z-index: 50;
+        }
+        .status-bar .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .status-bar .dot.connected { background: #0f0; }
     </style>
 </head>
 <body>
 
-    <div id="overlay" class="overlay">
-        <div class="status">YouTube Remote Screen</div>
-        <div class="info">Klaar voor verbinding...</div>
+    <!-- ========== HOME ========== -->
+    <div id="home-container">
+        <div class="home-header">
+            <span class="logo">▶</span>
+            YouTube Home
+        </div>
+        <div id="video-grid" class="video-grid"></div>
     </div>
 
-    <div id="player"></div>
+    <!-- ========== PLAYER ========== -->
+    <div id="player-container">
+        <div id="player"></div>
+    </div>
+
+    <!-- ========== STATUS ========== -->
+    <div class="status-bar">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Verbinding maken...</span>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let player;
+        // === STATE ===
+        let player = null;
+        let playerReady = false;
+        let videos = [];
+        let focusIndex = 0;
+        let viewMode = 'GRID'; // 'GRID' of 'PLAYER'
+
         const socket = io();
-        const overlay = document.getElementById('overlay');
+        const homeEl = document.getElementById('home-container');
+        const playerEl = document.getElementById('player-container');
+        const gridEl = document.getElementById('video-grid');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
 
-        // 1. YouTube API laden
-        var tag = document.createElement('script');
+        // ===================================================
+        // 1. YOUTUBE IFRAME API
+        // ===================================================
+        const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        document.head.appendChild(tag);
 
-        // 2. Player initialiseren
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '100%',
                 width: '100%',
-                videoId: '', // Start leeg
+                height: '100%',
+                videoId: '',
                 playerVars: {
-                    'autoplay': 1,
-                    'controls': 1,
-                    'rel': 0,
-                    'modestbranding': 1
+                    autoplay: 1,
+                    controls: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    mute: 1           // Muted starten zodat autoplay ALTIJD werkt
                 },
                 events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
+                    onReady: () => {
+                        playerReady = true;
+                        console.log('✅ YouTube Player is klaar');
+                        // Speel een eventueel wachtende video af
+                        if (pendingVideoId) {
+                            player.loadVideoById(pendingVideoId);
+                            console.log('▶ Wachtende video afspelen:', pendingVideoId);
+                            pendingVideoId = null;
+                        }
+                    },
+                    onStateChange: (event) => {
+                        // Als de video begint te spelen, unmute na korte vertraging
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            setTimeout(() => {
+                                player.unMute();
+                                player.setVolume(100);
+                            }, 300);
+                        }
+                    }
                 }
             });
         }
 
-        function onPlayerReady(event) {
-            console.log('YouTube Player is klaar');
+        // ===================================================
+        // 2. DEMO VIDEO'S (werkt zonder API key)
+        // ===================================================
+        const DEMO_VIDEOS = [
+            { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up', channel: 'Rick Astley', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg' },
+            { id: 'jNQXAC9IVRw', title: 'Me at the zoo', channel: 'jawed', thumbnail: 'https://img.youtube.com/vi/jNQXAC9IVRw/mqdefault.jpg' },
+            { id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE', channel: 'officialpsy', thumbnail: 'https://img.youtube.com/vi/9bZkp7q19f0/mqdefault.jpg' },
+            { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito ft. Daddy Yankee', channel: 'Luis Fonsi', thumbnail: 'https://img.youtube.com/vi/kJQP7kiw5Fk/mqdefault.jpg' },
+            { id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You', channel: 'Ed Sheeran', thumbnail: 'https://img.youtube.com/vi/JGwWNGJdvx8/mqdefault.jpg' },
+            { id: 'RgKAFK5djSk', title: 'Wiz Khalifa - See You Again ft. Charlie Puth', channel: 'Wiz Khalifa', thumbnail: 'https://img.youtube.com/vi/RgKAFK5djSk/mqdefault.jpg' },
+            { id: 'OPf0YbXqDm0', title: 'Mark Ronson - Uptown Funk ft. Bruno Mars', channel: 'Mark Ronson', thumbnail: 'https://img.youtube.com/vi/OPf0YbXqDm0/mqdefault.jpg' },
+            { id: 'CevxZvSJLk8', title: 'Katy Perry - Roar', channel: 'Katy Perry', thumbnail: 'https://img.youtube.com/vi/CevxZvSJLk8/mqdefault.jpg' },
+            { id: 'fRh_vgS2dFE', title: 'Justin Bieber - Sorry', channel: 'Justin Bieber', thumbnail: 'https://img.youtube.com/vi/fRh_vgS2dFE/mqdefault.jpg' },
+            { id: 'YqeW9_5kURI', title: 'Maroon 5 - Sugar', channel: 'Maroon 5', thumbnail: 'https://img.youtube.com/vi/YqeW9_5kURI/mqdefault.jpg' },
+            { id: 'hT_nvWreIhg', title: 'OneRepublic - Counting Stars', channel: 'OneRepublic', thumbnail: 'https://img.youtube.com/vi/hT_nvWreIhg/mqdefault.jpg' },
+            { id: 'e-ORhEE9VVg', title: 'Taylor Swift - Blank Space', channel: 'Taylor Swift', thumbnail: 'https://img.youtube.com/vi/e-ORhEE9VVg/mqdefault.jpg' }
+        ];
+
+        // ===================================================
+        // 3. DATA LADEN
+        // ===================================================
+        async function loadVideos() {
+            try {
+                const res = await fetch('/api/popular');
+                const data = await res.json();
+                if (data.error || !Array.isArray(data) || data.length === 0) {
+                    throw new Error('API niet beschikbaar');
+                }
+                videos = data;
+            } catch (err) {
+                console.warn('API niet beschikbaar, gebruik demo video\'s:', err.message);
+                videos = DEMO_VIDEOS;
+            }
+            focusIndex = 0;
+            renderGrid();
         }
 
-        function onPlayerStateChange(event) {
-            // Stuur status terug naar remote indien nodig
+        // ===================================================
+        // 4. GRID RENDEREN
+        // ===================================================
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            videos.forEach((v, i) => {
+                const card = document.createElement('div');
+                card.className = 'video-card' + (i === focusIndex ? ' focused' : '');
+                card.innerHTML = `
+                    <img class="thumb" src="${v.thumbnail}" alt="">
+                    <div class="info">
+                        <div class="title">${escapeHtml(v.title)}</div>
+                        <div class="channel">${escapeHtml(v.channel)}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => playVideo(v.id));
+                gridEl.appendChild(card);
+            });
         }
 
-        // 3. Socket commando's ontvangen
+        function moveFocus(direction) {
+            const cols = 4;
+            let newIndex = focusIndex;
+            switch (direction) {
+                case 'up':    newIndex = focusIndex - cols; break;
+                case 'down':  newIndex = focusIndex + cols; break;
+                case 'left':  newIndex = focusIndex - 1; break;
+                case 'right': newIndex = focusIndex + 1; break;
+            }
+            if (newIndex >= 0 && newIndex < videos.length) {
+                focusIndex = newIndex;
+                renderGrid();
+            }
+        }
+
+        // ===================================================
+        // 5. VIDEO AFSPELEN
+        // ===================================================
+        let pendingVideoId = null;
+
+        function playVideo(videoId) {
+            if (!videoId) return;
+
+            // Schakel altijd naar player-modus
+            viewMode = 'PLAYER';
+            homeEl.style.display = 'none';
+            playerEl.style.display = 'block';
+
+            if (playerReady) {
+                player.loadVideoById(videoId);
+                console.log('▶ Afspelen:', videoId);
+            } else {
+                // Player nog niet klaar? Sla op en wacht.
+                pendingVideoId = videoId;
+                console.log('⏳ Player nog niet klaar, video in wachtrij:', videoId);
+            }
+        }
+
+        function goHome() {
+            viewMode = 'GRID';
+            homeEl.style.display = 'flex';
+            playerEl.style.display = 'none';
+            if (player && playerReady) player.stopVideo();
+        }
+
+        // ===================================================
+        // 6. SOCKET COMMANDO'S ONTVANGEN
+        // ===================================================
         socket.on('execute', (data) => {
-            console.log('Ontvangen commando:', data);
-            
-            overlay.classList.add('hidden');
+            console.log('📩 Commando ontvangen:', data);
 
-            switch(data.type) {
-                case 'play':
-                    if (data.value) {
-                        player.loadVideoById(data.value);
-                    } else {
+            // Play met een video ID werkt ALTIJD (vanuit zoekresultaten)
+            if (data.type === 'play' && data.value) {
+                playVideo(data.value);
+                return;
+            }
+
+            // Home werkt ALTIJD
+            if (data.type === 'home') {
+                goHome();
+                return;
+            }
+
+            // Volume werkt ALTIJD
+            if (data.type === 'volume' && playerReady) {
+                player.setVolume(data.value);
+                return;
+            }
+
+            if (viewMode === 'GRID') {
+                switch (data.type) {
+                    case 'nav':
+                        moveFocus(data.value);
+                        break;
+                    case 'ok':
+                        const selected = videos[focusIndex];
+                        if (selected) playVideo(selected.id);
+                        break;
+                }
+            } else {
+                // PLAYER MODE
+                switch (data.type) {
+                    case 'play':
                         player.playVideo();
-                    }
-                    break;
-                case 'pause':
-                    player.pauseVideo();
-                    break;
-                case 'stop':
-                    player.stopVideo();
-                    overlay.classList.remove('hidden');
-                    break;
-                case 'volume':
-                    player.setVolume(data.value);
-                    break;
-                case 'seek':
-                    const currentTime = player.getCurrentTime();
-                    player.seekTo(currentTime + data.value, true);
-                    break;
-                case 'nav':
-                    // Voor YouTube leun-stijl navigatie (niet direct via IFrame)
-                    break;
-                case 'fullscreen':
-                    const iframe = document.getElementById('player');
-                    if (iframe.requestFullscreen) iframe.requestFullscreen();
-                    break;
+                        break;
+                    case 'pause':
+                        player.pauseVideo();
+                        break;
+                    case 'seek':
+                        player.seekTo(player.getCurrentTime() + data.value, true);
+                        break;
+                    case 'next':
+                        // Ga naar de volgende video in de lijst
+                        if (focusIndex < videos.length - 1) {
+                            focusIndex++;
+                            playVideo(videos[focusIndex].id);
+                        }
+                        break;
+                    case 'prev':
+                        // Ga naar de vorige video in de lijst
+                        if (focusIndex > 0) {
+                            focusIndex--;
+                            playVideo(videos[focusIndex].id);
+                        }
+                        break;
+                }
             }
         });
 
-        // Verbinding status
+        // ===================================================
+        // 7. VERBINDING
+        // ===================================================
         socket.on('connect', () => {
-             console.log('Verbonden met server');
-             document.querySelector('.info').textContent = 'Verbonden! Gebruik de afstandsbediening op je telefoon.';
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Verbonden — wacht op afstandsbediening';
+            loadVideos();
         });
+
+        socket.on('disconnect', () => {
+            statusDot.classList.remove('connected');
+            statusText.textContent = 'Verbinding verbroken';
+        });
+
+        // ===================================================
+        // HELPERS
+        // ===================================================
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
     </script>
 </body>
 </html>

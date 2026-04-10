@@ -63,6 +63,37 @@ app.get('/api/search', async (req, res) => {
 });
 
 // =============================================
+// YOUTUBE POPULAR API (voor Home Grid)
+// =============================================
+app.get('/api/popular', async (req, res) => {
+    try {
+        if (!YOUTUBE_API_KEY) {
+            return res.status(500).json({ error: 'YouTube API Key ontbreekt' });
+        }
+
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=12&regionCode=NL&key=${YOUTUBE_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+            return res.status(data.error.code || 500).json(data.error);
+        }
+
+        const results = data.items.map(item => ({
+            id: item.id,
+            title: item.snippet.title,
+            channel: item.snippet.channelTitle,
+            thumbnail: item.snippet.thumbnails.medium.url
+        }));
+
+        res.json(results);
+    } catch (err) {
+        console.error('Popular failed:', err);
+        res.status(500).json({ error: 'Laden van populaire video\'s mislukt' });
+    }
+});
+
+// =============================================
 // SOCKET.IO SIGNALING (Remote -> Screen)
 // =============================================
 io.on('connection', (socket) => {

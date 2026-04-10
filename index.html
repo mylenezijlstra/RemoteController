@@ -3,33 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>YouTube Remote Controller</title>
+    <title>YouTube Smart Remote</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ============ REMOTE SCREEN ============ -->
 <div class="remote-controller" id="remoteScreen">
 
-    <!-- HEADER: Status + TV ID -->
-    <header class="header" id="header">
+    <!-- HEADER -->
+    <header class="header">
         <div class="logo-section">
             <span class="yt-logo">🎬</span>
             <span class="yt-text">YouTube Remote</span>
         </div>
-        <div class="connection-status" id="connectionStatus">
-            <span class="status-dot"></span>
-            <span class="status-text">Laden...</span>
-        </div>
     </header>
 
-    <!-- INSTRUCTIONS -->
-    <div class="instructions-section">
-        <p>Open <b>/screen.html</b> op je PC om te beginnen.</p>
-    </div>
-
     <!-- ZOEKBALK -->
-    <div class="search-container" id="searchContainer">
+    <div class="search-container">
         <input type="text" class="search-bar" id="searchInput" placeholder="Zoek op YouTube..." autocomplete="off">
         <span class="search-icon">🔍</span>
         <div class="search-results" id="searchResults"></div>
@@ -37,36 +27,34 @@
 
     <!-- D-PAD NAVIGATIE -->
     <div class="dpad-section">
-        <div class="dpad-container" id="dpad">
-            <button class="dpad-btn dpad-up" id="dpadUp" title="Volume Omhoog">▲</button>
-            <button class="dpad-btn dpad-down" id="dpadDown" title="Volume Omlaag">▼</button>
-            <button class="dpad-btn dpad-left" id="dpadLeft" title="5s Terug">◀</button>
-            <button class="dpad-btn dpad-right" id="dpadRight" title="5s Vooruit">▶</button>
-            <button class="dpad-btn dpad-ok" id="dpadOk" title="Play">OK</button>
+        <div class="dpad-container">
+            <button class="dpad-btn dpad-up" id="dpadUp" title="Omhoog">▲</button>
+            <button class="dpad-btn dpad-down" id="dpadDown" title="Omlaag">▼</button>
+            <button class="dpad-btn dpad-left" id="dpadLeft" title="Links">◀</button>
+            <button class="dpad-btn dpad-right" id="dpadRight" title="Rechts">▶</button>
+            <button class="dpad-btn dpad-ok" id="dpadOk">OK</button>
         </div>
     </div>
 
-    <!-- TERUG & HOME KNOPPEN -->
-    <div class="nav-buttons" id="navButtons">
-        <button class="nav-btn" id="backBtn">
-            <span class="icon">⏹</span>
-            Stop
-        </button>
+    <!-- HOME KNOP -->
+    <div class="nav-buttons">
         <button class="nav-btn" id="homeBtn">
             <span class="icon">⌂</span>
-            Reset
+            Home
         </button>
     </div>
 
-    <!-- MEDIA CONTROLS + VOLUME -->
-    <div class="media-section" id="mediaSection">
-        <div class="media-controls">
-            <button class="media-btn secondary" id="prevBtn" title="10s Terug">⏮</button>
-            <button class="media-btn primary" id="playPauseBtn" title="Play / Pause">▶</button>
-            <button class="media-btn secondary" id="nextBtn" title="10s Vooruit">⏭</button>
+    <!-- MEDIA CONTROLS -->
+    <div class="media-section">
+        <div class="media-row">
+            <button class="skip-btn" id="prevVideoBtn" title="Vorige Video">⏮</button>
+            <button class="seek-btn" id="seekMinusBtn" title="-10s">10-</button>
+            <button class="media-btn-primary" id="playPauseBtn">▶</button>
+            <button class="seek-btn" id="seekPlusBtn" title="+10s">+10</button>
+            <button class="skip-btn" id="nextVideoBtn" title="Volgende Video">⏭</button>
         </div>
 
-        <div class="volume-section" id="volumeSection">
+        <div class="volume-section">
             <span class="volume-icon">🔇</span>
             <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
             <span class="volume-icon">🔊</span>
@@ -76,10 +64,8 @@
 
 </div>
 
-<!-- TOAST NOTIFICATIONS -->
 <div class="toast" id="toast"></div>
 
-<!-- Libraries -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="app.js"></script>
 </body>

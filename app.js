@@ -1,5 +1,5 @@
 // ============================================================
-// YouTube Remote Controller — Frontend Logic
+// YouTube Remote Controller — Frontend Logic (Smart TV Version)
 // ============================================================
 
 const socket = io();
@@ -24,19 +24,21 @@ socket.on('connect', () => {
 socket.on('disconnect', () => {
     state.isConnected = false;
     updateConnectionStatus();
-    showToast('Verbinding verbroken');
+    showToast('Verbinding herstellen...');
 });
 
 function updateConnectionStatus() {
     const statusDot = document.querySelector('.status-dot');
     const statusText = document.querySelector('.status-text');
 
-    if (state.isConnected) {
-        statusDot.style.background = '#00c853'; // Success groen
-        statusText.textContent = 'Verbonden';
-    } else {
-        statusDot.style.background = '#ff5252'; // Danger rood
-        statusText.textContent = 'Verbinding herstellen...';
+    if (statusDot && statusText) {
+        if (state.isConnected) {
+            statusDot.style.background = '#00c853';
+            statusText.textContent = 'Verbonden';
+        } else {
+            statusDot.style.background = '#ff5252';
+            statusText.textContent = 'Verbinding herstellen...';
+        }
     }
 }
 
@@ -53,30 +55,26 @@ function sendCommand(type, value) {
     socket.emit('command', { type, value });
 }
 
-// Playback commands
+// Navigation Commands
+function cmdNav(dir) { sendCommand('nav', dir); }
+function cmdOk() { sendCommand('ok'); }
+function cmdHome() { sendCommand('home'); }
+
+// Playback Controls
 function cmdPlayPause() {
     state.isPlaying = !state.isPlaying;
     document.getElementById('playPauseBtn').textContent = state.isPlaying ? '⏸' : '▶';
     sendCommand(state.isPlaying ? 'play' : 'pause');
 }
 
-function cmdNext() { sendCommand('seek', 10); } // 10s vooruit
-function cmdPrev() { sendCommand('seek', -10); } // 10s achteruit
+function cmdSeek(val) { sendCommand('seek', val); }
+function cmdNextVideo() { sendCommand('next'); }
+function cmdPrevVideo() { sendCommand('prev'); }
 
-// Navigation commands
-function cmdUp() { sendCommand('volume', Math.min(100, state.currentVolume + 10)); state.currentVolume += 10; updateVolumeUI(); }
-function cmdDown() { sendCommand('volume', Math.max(0, state.currentVolume - 10)); state.currentVolume -= 10; updateVolumeUI(); }
-function cmdLeft() { sendCommand('seek', -5); }
-function cmdRight() { sendCommand('seek', 5); }
-function cmdSelect() { sendCommand('play'); }
-function cmdBack() { sendCommand('stop'); }
-function cmdHome() { window.location.reload(); }
-
-function updateVolumeUI() {
-    const slider = document.getElementById('volumeSlider');
-    const val = document.getElementById('volumeValue');
-    slider.value = state.currentVolume;
-    val.textContent = state.currentVolume + '%';
+function updateVolume(val) {
+    state.currentVolume = val;
+    document.getElementById('volumeValue').textContent = val + '%';
+    sendCommand('volume', val);
 }
 
 // ============================================================
@@ -91,8 +89,7 @@ async function doSearch(query) {
         const data = await res.json();
         
         if (data.error) {
-            showToast('API Key nodig in server.js');
-            console.error('Search error:', data.error);
+            showToast('Zoeken mislukt (API Key nodig)');
             return;
         }
         
@@ -104,6 +101,7 @@ async function doSearch(query) {
 
 function displaySearchResults(results) {
     const container = document.getElementById('searchResults');
+    const input = document.getElementById('searchInput');
     container.innerHTML = '';
 
     if (!Array.isArray(results) || results.length === 0) {
@@ -123,21 +121,17 @@ function displaySearchResults(results) {
             </div>
         `;
         div.addEventListener('click', () => {
-            playMedia(item.id);
+            // Wanneer je op een resultaat klikt, start hij op het scherm
+            sendCommand('play', item.id);
             container.classList.remove('visible');
-            document.getElementById('searchInput').value = '';
+            input.value = '';
+            state.isPlaying = true;
+            document.getElementById('playPauseBtn').textContent = '⏸';
         });
         container.appendChild(div);
     });
 
     container.classList.add('visible');
-}
-
-function playMedia(videoId) {
-    state.isPlaying = true;
-    document.getElementById('playPauseBtn').textContent = '⏸';
-    sendCommand('play', videoId);
-    showToast('Video gestart op scherm');
 }
 
 // ============================================================
@@ -146,9 +140,11 @@ function playMedia(videoId) {
 
 function showToast(message) {
     const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('visible');
-    setTimeout(() => toast.classList.remove('visible'), 3000);
+    if (toast) {
+        toast.textContent = message;
+        toast.classList.add('visible');
+        setTimeout(() => toast.classList.remove('visible'), 3000);
+    }
 }
 
 function escapeHtml(text) {
@@ -163,36 +159,38 @@ function escapeHtml(text) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // === CONTROLS ===
-    document.getElementById('dpadUp').addEventListener('click', cmdUp);
-    document.getElementById('dpadDown').addEventListener('click', cmdDown);
-    document.getElementById('dpadLeft').addEventListener('click', cmdLeft);
-    document.getElementById('dpadRight').addEventListener('click', cmdRight);
-    document.getElementById('dpadOk').addEventListener('click', cmdSelect);
-    document.getElementById('backBtn').addEventListener('click', cmdBack);
+    // === DPAD ===
+    document.getElementById('dpadUp').addEventListener('click', () => cmdNav('up'));
+    document.getElementById('dpadDown').addEventListener('click', () => cmdNav('down'));
+    document.getElementById('dpadLeft').addEventListener('click', () => cmdNav('left'));
+    document.getElementById('dpadRight').addEventListener('click', () => cmdNav('right'));
+    document.getElementById('dpadOk').addEventListener('click', cmdOk);
     document.getElementById('homeBtn').addEventListener('click', cmdHome);
+
+    // === MEDIA ===
     document.getElementById('playPauseBtn').addEventListener('click', cmdPlayPause);
-    document.getElementById('prevBtn').addEventListener('click', cmdPrev);
-    document.getElementById('nextBtn').addEventListener('click', cmdNext);
+    document.getElementById('seekMinusBtn').addEventListener('click', () => cmdSeek(-10));
+    document.getElementById('seekPlusBtn').addEventListener('click', () => cmdSeek(10));
+    document.getElementById('nextVideoBtn').addEventListener('click', cmdNextVideo);
+    document.getElementById('prevVideoBtn').addEventListener('click', cmdPrevVideo);
 
     const volumeSlider = document.getElementById('volumeSlider');
-    const volumeValue = document.getElementById('volumeValue');
-    volumeSlider.addEventListener('input', () => {
-        state.currentVolume = parseInt(volumeSlider.value);
-        volumeValue.textContent = state.currentVolume + '%';
-    });
-    volumeSlider.addEventListener('change', () => {
-        sendCommand('volume', state.currentVolume);
-    });
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', () => {
+            updateVolume(parseInt(volumeSlider.value));
+        });
+    }
 
     // === SEARCH ===
     let searchTimeout;
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
-        if (query.length >= 2) searchTimeout = setTimeout(() => doSearch(query), 500);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            if (query.length >= 2) searchTimeout = setTimeout(() => doSearch(query), 500);
+        });
+    }
 
     updateConnectionStatus();
 });
