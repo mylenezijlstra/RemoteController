@@ -329,9 +329,7 @@ body {
     border-style: dashed;
 }
 
-/* ========================================
-   VOLUME
-   ======================================== */
+/*VOLUME*/
 .volume-section {
     display: flex;
     align-items: center;
@@ -359,9 +357,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* ========================================
-   TOAST
-   ======================================== */
+/* TOAST */
 .toast {
     position: fixed;
     bottom: 40px;

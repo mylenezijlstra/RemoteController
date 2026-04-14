@@ -16,7 +16,7 @@ const io = new Server(server, {
 
 const PORT = 3000;
 
-// === CONFIGURATIE ===
+// CONFIGURATIE 
 // Voeg hier je YouTube API Key toe (v3)
 // https://console.cloud.google.com/apis/library/youtube.googleapis.com
 const YOUTUBE_API_KEY = 'AIzaSyB_TjKdDf1ibb36DvVpk4X0_ddFfrBKOZU';
@@ -25,9 +25,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// =============================================
 // YOUTUBE SEARCH API PROXY
-// =============================================
+
 app.get('/api/search', async (req, res) => {
     try {
         const { q } = req.query;
@@ -62,9 +61,9 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// =============================================
+
 // YOUTUBE POPULAR API (voor Home Grid)
-// =============================================
+
 app.get('/api/popular', async (req, res) => {
     try {
         if (!YOUTUBE_API_KEY) {
@@ -93,9 +92,7 @@ app.get('/api/popular', async (req, res) => {
     }
 });
 
-// =============================================
 // SOCKET.IO SIGNALING (Remote -> Screen)
-// =============================================
 io.on('connection', (socket) => {
     console.log('📱 Nieuwe client verbonden:', socket.id);
 
