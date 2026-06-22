@@ -3,8 +3,7 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const fetch = require('node-fetch');
-// const { Server } = require('socket.io');
-import { Server } from "socket.io";
+const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
